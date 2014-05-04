@@ -1,9 +1,8 @@
 TRAC_URL = "http://trac.sagemath.org/sage_trac"
 TRAC_REPO = "git://trac.sagemath.org/sage.git"
 
-import re, hashlib, urllib2, os, sys, tempfile, traceback, time, subprocess
+import re, hashlib, urllib, urllib2, os, sys, tempfile, traceback, time, subprocess
 import pprint
-
 from util import do_or_die, now_str, ConfigException
 
 def digest(s):
@@ -17,8 +16,15 @@ def get_url(url):
     Returns the contents of url as a string.
     """
     try:
+<<<<<<< HEAD:src/trac.py
         url = url.replace(' ', '%20')
         handle = urllib2.urlopen(url, timeout=15)
+=======
+        parsed_url = list(urlparse.urlsplit(url, allow_fragments=False))
+        parsed_url[2] = urllib.quote(parsed_url[2]) # quote the path
+        url = urlparse.urlunsplit(parsed_url)
+        handle = urllib2.urlopen(url, timeout=5)
+>>>>>>> pr1:trac.py
         data = handle.read()
         handle.close()
         return data
