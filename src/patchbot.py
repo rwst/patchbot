@@ -181,6 +181,9 @@ def check_time_of_day(hours):
     return False
 
 def sha1file(path, blocksize=2**16):
+    """
+    Return SHA-1 of file.
+    """
     h = hashlib.sha1()
     handle = open(path)
     buf = handle.read(blocksize)
@@ -415,6 +418,16 @@ class Patchbot:
         history.write("%s %s\n" % (datetime(), ticket['id']))
         history.close()
         if not ticket['spkgs']:
+#            Create four branches from base and ticket. If ticket deemed unsafe then
+#            clone git repo to temp directory; additionally, if use_ccache then install
+#            ccache. Set some global and environment variables.
+#
+#            There are four branches at play here:
+#            patchbot/base -- the latest release that all tickets are merged into for testing
+#            patchbot/base_upstream -- temporary staging area for patchbot/base
+#            patchbot/ticket_upstream -- pristine clone of the ticket on trac
+#            patchbot/ticket_merged -- merge of patchbot/ticket_upstream into patchbot/base
+
             ticket_id = ticket['id']
             fetch_from_trac(ticket_id)
             ticket_is_safe = inplace_safe()

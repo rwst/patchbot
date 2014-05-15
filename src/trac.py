@@ -113,6 +113,9 @@ def git_commit(branch):
             return "unknown"
 
 def parse_tsv(tsv):
+    """
+    Convert tsv to dict.
+    """
     header, data = tsv.split('\n', 1)
     def sanitize(items):
         for item in items:
@@ -207,7 +210,7 @@ def extract_patches(rss):
 participant_regex = re.compile("<strong>attachment</strong>\w*set to <em>(.*)</em>")
 def extract_participants(rss):
     """
-    Extracts any spkgs for a ticket from the html page.
+    Extracts any authors for a ticket from the html page.
     """
     all = set()
     for item in rss.split('<item>'):
@@ -279,11 +282,6 @@ def inplace_safe():
     return safe
 
 def fetch_from_trac(ticket_id):
-    # There are four branches at play here:
-    # patchbot/base -- the latest release that all tickets are merged into for testing
-    # patchbot/base_upstream -- temporary staging area for patchbot/base
-    # patchbot/ticket_upstream -- pristine clone of the ticket on trac
-    # patchbot/ticket_merged -- merge of patchbot/ticket_upstream into patchbot/base
     try:
         info = scrape(ticket_id)        
         do_or_die("git checkout patchbot/base")
@@ -295,8 +293,7 @@ def fetch_from_trac(ticket_id):
         do_or_die("git fetch %s +%s:patchbot/ticket_upstream" % (repo, branch))
     except Exception, exn:
         raise ConfigException, exn.message
-        
-        
+                
 def merge_ticket(ticket_id):
     merge_failure = False
     try:
