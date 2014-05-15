@@ -11,6 +11,8 @@
 #
 #               Copyright 2010-14 (C) Google, Inc.
 #
+#          Copyright 2014 (C) Ralf Stephan <ralf@ark.in-berlin.de>
+#
 #  Distributed under the terms of the GNU General Public License (GPL)
 #  as published by the Free Software Foundation; either version 2 of
 #  the License, or (at your option) any later version.
@@ -189,14 +191,15 @@ def sha1file(path, blocksize=2**16):
 
 class Patchbot:
 
-    def __init__(self, sage_root, server, config_path, dry_run=False, plugin_only=False, safe_only=False):
+    def __init__(self, sage_root, server, config_path, options):
         self.sage_root = sage_root
         self.server = server
         self.base = get_version(sage_root)
         self.behind_base = {}
-        self.dry_run = dry_run
-        self.plugin_only = plugin_only
-        self.safe_only = safe_only
+        self.dry_run = options.dry_run
+        self.plugin_only = options.plugin_only
+        self.safe_only = options.safe_only
+        self.keep_tmp = options.keep_tmp
         self.config_path = config_path
         self.reload_config()
         self.last_pull = 0
@@ -551,7 +554,8 @@ class Patchbot:
         else:
             print "Error reporting", ticket['id']
         maybe_temp_root = os.environ['SAGE_ROOT']
-        if maybe_temp_root.endswith("-sage-git-temp-%s" % ticket['id']):
+        if (not self.keep_tmp
+                and maybe_temp_root.endswith("-sage-git-temp-%s" % ticket['id'])):
             shutil.rmtree(maybe_temp_root)
         return status[state]
 
@@ -723,6 +727,7 @@ def main(args):
     parser.add_option("--dry-run", action="store_true", dest="dry_run", default=False)
     parser.add_option("--plugin-only", action="store_true", dest="plugin_only", default=False)
     parser.add_option("--safe-only", action="store_true", dest="safe_only", default=False)
+    parser.add_option("--keep-tmp", action="store_true", dest="keep_tmp", default=False)
     (options, args) = parser.parse_args(args)
 
     conf_path = options.config and os.path.abspath(options.config)
@@ -733,7 +738,7 @@ def main(args):
         tickets = None
         count = int(options.count)
 
-    patchbot = Patchbot(os.path.abspath(options.sage_root), options.server, conf_path, dry_run=options.dry_run, plugin_only=options.plugin_only, safe_only=options.safe_only)
+    patchbot = Patchbot(os.path.abspath(options.sage_root), options.server, conf_path, options)
 
     conf = patchbot.get_config()
     if options.list:
@@ -793,6 +798,8 @@ def main(args):
             else:
                 print "Idle."
                 time.sleep(conf['idle'])
+            if options.keep_tmp:
+                break
         except Exception:
             traceback.print_exc()
             time.sleep(conf['idle'])
