@@ -12,3 +12,15 @@ and PIL will allow multi-colored blurbs.  Start a monitoring loop with
 
 Currently, the server is set up to run on port 21100, communicating with
 a mongod instance running on 21002.
+
+--------------------------------------------------------
+This is a fork of the original patchbot by robertwb, version 2.1.1.1.
+It has the following changes versus that version:
+
+* scoring changes by vbraun
+* use git:// URIs instead of http(s)://
+* tickets with changes in src/doc no longer considered unsafe
+* do not check tickets with open dependencies
+* before make, make doc-clean
+* --safe-only option to only test 'safe' tickets
+* --keep-tmp option to not remove /tmp build directories
