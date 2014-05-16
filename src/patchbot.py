@@ -294,23 +294,37 @@ class Patchbot:
         return self.config
 
     def check_base(self):
+        """
+        Create base branch if it not already exists. Fetch configured
+        base branch from base_repo. If base branch changed or stale, set
+        base to upstream branch and return False. Return True if not so.
+        
+        Patchbot keeps patchbot/base as reference, but with every ticket
+        it checks if <base_repo>/<base_branch> is too far ahead commit-wise
+        or time-wise, or if local base has branched vs. upstream. If so,
+        base is replaced with upstream, and in the main protocol the new
+        base gets a full check. 
+        """
         os.chdir(self.sage_root)
         try:
             do_or_die("git checkout patchbot/base")
         except Exception:
+            print "Branch patchbot/base does not exist. Branching from current."
             do_or_die("git checkout -b patchbot/base")
         do_or_die("git fetch %s +%s:patchbot/base_upstream" % (self.config['base_repo'], self.config['base_branch']))
         only_in_base = int(subprocess.check_output(["git", "rev-list", "--count", "patchbot/base_upstream..patchbot/base"]))
         only_in_upstream = int(subprocess.check_output(["git", "rev-list", "--count", "patchbot/base..patchbot/base_upstream"]))
         if (only_in_base > 0
-            or only_in_upstream > self.config['max_behind_commits']
-            or (only_in_upstream > 0 and time.time() - self.last_pull < self.config['max_behind_days'] * 60 * 60 * 24)):
+              or only_in_upstream > self.config['max_behind_commits']
+              or (only_in_upstream > 0 and time.time() - self.last_pull < self.config['max_behind_days'] * 60 * 60 * 24)):
+            print "Base branch changed or stale. Setting to upstream branch."
             do_or_die("git checkout patchbot/base_upstream")
             do_or_die("git branch -f patchbot/base patchbot/base_upstream")
             do_or_die("git checkout patchbot/base")
             self.last_pull = time.time()
             self.behind_base = {}
             return False
+        print "Check base OK."
         return True
 
     def human_readable_base(self):
@@ -782,7 +796,7 @@ def main(args):
         os.environ['CCACHE_COMPILERCHECK'] = '%compiler% --version'
 
     if not options.skip_base:
-        patchbot.check_base()
+        __ = patchbot.check_base()
         def good(report):
             return report['machine'] == conf['machine'] and report['status'] == 'TestsPassed'
         if options.plugin_only or not any(good(report) for report in patchbot.current_reports(0)):
